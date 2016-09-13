@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.9.0/jquery.js" /></script>
+    <title>带有分散效果的瀑布流</title>
+    <style type="text/css">
+    * {
+        padding: 0;
+        margin: 0;
+    }
+    
+    #main {
+        position: relative;
+    }
+    
+    .box {
+        padding: 15px 0 0 15px;
+        float: left;
+    }
+    
+    .pic {
+        padding: 10px;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 6px #ccc;
+        border-radius: 5px;
+    }
+    
+    .pic img {
+        width: 165px;
+        height: auto;
+    }
+    </style>
+    <script>
+    $(window).on("load", function() {
+        groupMove();
+
+        var dataInt = {
+            'data': [{
+                'src': '1.jpg'
+            }, {
+                'src': '2.jpg'
+            }, {
+                'src': '3.jpg'
+            }, {
+                'src': '4.jpg'
+            }]
+        };
+
+        // window.onscroll = function() {
+        //     // 拖动滚动条时
+        //     console.log(checkScrollSlide());
+        //     if (checkScrollSlide()) {
+        //         $.each(dataInt.data, function(key, value) {
+        //             var oBox = $("<div>").addClass("box").appendTo($("#main"));
+        //             var oPic = $("<div>").addClass("pic").appendTo($(oBox));
+        //             $("<img>").attr("src", "img/" + $(value).attr("src")).appendTo($(oPic));
+        //         })
+        //         waterfall();
+        //     }
+        // };
+        window.onscroll = function() {
+            if (checkScrollSlide()) {
+                var oParent = document.getElementById("main");
+                for (var i = 0; i < dataInt.data.length; i++) {
+                    var oPin = document.createElement('div'); //添加 元素节点
+                    oPin.className = 'box'; //添加 类名 name属性
+                    oParent.appendChild(oPin); //添加 子节点
+                    var oBox = document.createElement('div');
+                    oBox.className = 'pic';
+                    oPin.appendChild(oBox);
+                    var oImg = document.createElement('img');
+                    oImg.src = './img/' + dataInt.data[i].src;
+                    oBox.appendChild(oImg);
+                }
+                waterfall();
+            }
+        }
+    });
+
+    function getByClassName(parent, child) {
+        var allTag = parent.getElementsByTagName('*');
+        var tarClass = new Array();
+        for (var i = 0; i < allTag.length; i++) {
+            if (allTag[i].className == child) {
+                tarClass.push(allTag[i]);
+            }
+        }
+        return tarClass;
+    }
+
+    function groupMove() {
+        // var $boxs=$("#main>div");
+        var parent = document.getElementById("main");
+        var boxs = getByClassName(parent, "box");
+        // console.log(boxs.length);
+        // console.log($boxs.eq(1).outerHeight());
+        // console.log(boxs[1].offsetHeight);
+        // console.log($boxs.eq(1).outerWidth());
+        // console.log(boxs[1].offsetWidth);
+
+        // $boxs.each(function(i){
+        //     $boxs.eq(i).css("position","absolute");
+        //     var otop=Math.floor($(window).height()/2)+(Math.random()*10>5?1:(-1))*5*i-Math.floor($boxs.eq(i).outerHeight()/2);
+        //     var oleft=Math.floor($(window).width()/2)+(Math.random()*10>5?1:(-1))*5*i-Math.floor($boxs.eq(i).outerWidth()/2);
+        //     $boxs.eq(i).css("top",otop);
+        //     $boxs.eq(i).css("left",oleft);
+
+        // });
+        for (var i = 0; i < boxs.length; i++) {
+            boxs[i].style.position = "absolute";
+            var bheight = document.documentElement.clientHeight;
+            var bwidth = document.documentElement.clientWidth;
+            var otop = Math.floor(bheight / 2) + (Math.random() * 10 > 5 ? 1 : (-1)) * 5 * i - Math.floor(boxs[i].offsetHeight / 2);
+            var oleft = Math.floor(bwidth / 2) + (Math.random() * 10 > 5 ? 1 : (-1)) * 5 * i - Math.floor(boxs[i].offsetWidth / 2);
+            boxs[i].style.top = otop + "px";
+            boxs[i].style.left = oleft + "px";
+        }
+
+        // var w=$boxs.eq(0).outerWidth();//每个数据块的宽度
+        var w = boxs[0].offsetWidth;
+        // var cols=Math.floor($(window).width()/w);//列数
+        var bwidth = document.documentElement.clientWidth;
+        var cols = Math.floor(bwidth / w);
+        // $("#main").width(w*cols).css("margin","0 auto");//main居中
+        parent.style.width = (w * cols) + "px";
+        parent.style.margin = "0 auto";
+        // var hArr=[];
+        var hArr = new Array();
+
+        // setTimeout(function(){
+        //     var json;
+        //     $boxs.each(function(index){
+        //         //每个数据块的高度
+        //         var h=$boxs.eq(index).outerHeight();
+        //         if(index<cols){
+        //             hArr[index]=h;
+        //             json={top:0,left:index*w}
+        //             startMove(index,json);
+        //         }else{
+        //             var minH=Math.min.apply(null,hArr);
+        //             var minHIndex=$.inArray(minH,hArr);
+        //             json={top:minH,left:minHIndex*w};
+        //             startMove(index,json);
+        //             hArr[minHIndex]+=$boxs.eq(index).outerHeight();
+        //         }
+        //     });
+        // },1000);
+        setTimeout(function() {
+            var json = null;
+            for (var i = 0; i < boxs.length; i++) {
+                var h = boxs[i].offsetHeight;
+                if (i < cols) {
+                    hArr[i] = h;
+                    json = {
+                        top: 0,
+                        left: (i * w)
+                    };
+                    startMove(boxs[i], json);
+                } else {
+                    var minH = Math.min.apply(null, hArr);
+                    var minHIndex = getMinIndex(hArr, minH);
+                    json = {
+                        top: minH,
+                        left: (minHIndex * w)
+                    };
+                    startMove(boxs[i], json);
+                    hArr[minHIndex] += boxs[i].offsetHeight;
+                }
+            }
+        }, 1000)
+    }
+
+    function getMinIndex(array, min) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] == min) {
+                return i;
+            }
+        }
+    }
+
+    function waterfall() {
+        var $boxs = $("#main>div");
+        var w = $boxs.eq(0).outerWidth();
+        var cols = Math.floor($(window).width() / w);
+        $("#main").width(w * cols).css("margin", "0 auto");
+        var hArr = [];
+        $boxs.each(function(index, value) {
+            var h = $boxs.eq(index).outerHeight();
+            if (index < cols) {
+                hArr[index] = h;
+            } else {
+                var minH = Math.min.apply(null, hArr);
+                var minHIndex = $.inArray(minH, hArr);
+                $(value).css({
+                    "position": "absolute",
+                    "top": minH + "px",
+                    "left": minHIndex * w + "px"
+                });
+                hArr[minHIndex] += $boxs.eq(index).outerHeight();
+            }
+        })
+    }
+    // function checkScrollSlide(){
+    //   // 检测是否具备了加载数据块的条件
+    //   var $lastBox=$("#main>div").last();
+    //     var lastBoxDis=$lastBox.offset().top+Math.floor($lastBox.outerHeight()/2);
+
+    //     var scrollTop=$(window).scrollTop();
+    //     var documentH=$(window).height();
+    //     return (lastBoxDis<scrollTop+documentH)?true:false;
+    // }
+    function checkScrollSlide() {
+        var parent = document.getElementById("main");
+        var boxs = getByClassName(parent, "box");
+        var lastBox = boxs[boxs.length - 1];
+        var lastBoxDis = parseInt(lastBox.style.top) + Math.floor(lastBox.offsetHeight / 2);
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop; //注意解决兼容性
+        var documentH = document.documentElement.clientHeight; //页面高度
+        console.log(lastBox);
+        console.log(lastBoxDis);
+        console.log(scrollTop);
+        console.log(documentH);
+        console.log((scrollTop + documentH));
+        return (lastBoxDis < (scrollTop + documentH)) ? true : false;
+    }
+
+
+    // function startMove(index,json,fn){
+    //     clearInterval(timer);
+    //     var $boxs=$("#main>div");
+    //     var timer=setInterval(function(){
+    //         var flag=true;//①要设置在定时器里，否则经过②后，即使物体运动全部结束，
+    //         //flag的值夜仍旧为false，这样永远也不会执行③处的判断，即链式运动的回调函数
+    //       for(var attr in json){
+    //         //1.取当前的值
+    //         var icur=parseInt($boxs.eq(index).css(attr));
+    //         //2.算速度
+    //         var speed=(json[attr]-icur)/8;
+    //         speed=speed>0?Math.ceil(speed):Math.floor(speed);
+    //         //3.检测停止
+    //         //console.log(speed);
+    //         if(icur!=json[attr]){
+    //             flag=false;//②
+    //         }
+
+    //         $boxs.eq(index).css(attr,icur+speed);
+
+    //      }
+    //      if(flag){//③
+
+    //         clearInterval(timer);
+    //         if(fn){
+    //             fn();
+    //         }
+    //      }
+    //     },30)
+    // }
+    function getStyle(obj, attr) {
+        if (obj.currentStyle) {
+            return obj.currentStyle[attr];
+        } else {
+            return getComputedStyle(obj, null)[attr];
+        }
+    }
+
+    function startMove(obj, json, fun) {
+        var finishFlag = true;
+        clearInterval(obj.timer);
+        obj.timer = setInterval(function() {
+            flag = true;
+            var speed = 0,
+                currStyle = null;
+            for (var attr in json) {
+                if (attr == 'opacity') {
+                    var isOpacity = true;
+                    currStyle = Math.round(parseFloat(getStyle(obj, attr)) * 100);
+                } else {
+                    currStyle = parseInt(getStyle(obj, attr));
+                }
+                speed = (json[attr] - currStyle) / 8;
+                speed = speed > 0 ? Math.ceil(speed) : Math.floor(speed);
+                if (currStyle != json[attr]) {
+                    finishFlag = false;
+                }
+                if (isOpacity) {
+                    obj.style.filter = 'alpha(opacity:' + (currStyle + speed) + ')';
+                    obj.style[attr] = (currStyle + speed) / 100;
+                } else {
+                    obj.style[attr] = currStyle + speed + 'px';
+                }
+                if (finishFlag) {
+                    clearInterval(obj.timer);
+                    if (fun) {
+                        fun();
+                    }
+                }
+            }
+        }, 30);
+    }
+    </script>
+</head>
+
+<body>
+    <div id="main">
+        <div class="box">
+            <div class="pic">
+                <img src="img/0.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/1.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/2.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/3.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/4.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/5.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/6.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/7.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/8.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/9.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/10.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/11.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/12.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/13.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/14.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/15.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/16.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/17.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/18.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/19.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/20.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/21.jpg">
+            </div>
+        </div>
+        <div class="box">
+            <div class="pic">
+                <img src="img/22.jpg">
+            </div>
+        </div>
+    </div>
+    </div>
+</body>
+
+</html>
